@@ -1,0 +1,5 @@
+# 备份数据(含 SSH 私钥 / AI token / 数据库密码镜像)——永不提交
+backups/
+*.dmg
+*.tar.gz
+.DS_Store
