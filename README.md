@@ -135,7 +135,7 @@ bash ~/macos-backup/restore.sh
 |---|---|---|
 | 1 | 把 `config/` 里的配置一个个放回 `~` | 纯复制，不依赖软件是否已装 |
 | 2 | 修正 `~/.ssh` 权限（目录 700、私钥 600） | 不然私钥可能不被系统接受 |
-| 3 | 装 **Homebrew**（没有才装；自动套用 USTC 国内镜像，克隆/下载不再连 github/ghcr；Xcode 命令行工具由安装脚本顺带装） | 后面装软件全靠它 |
+| 3 | 装 **Homebrew**（先装本体，再套用 USTC 国内镜像，随后 `brew bundle` 把软件全部装回来；克隆和瓶子下载全程走 USTC 镜像，不再连官方源；Xcode 命令行工具由安装脚本顺带装） | 后面装软件全靠它 |
 | 4 | `brew bundle --file manifest/Brewfile` **把软件全部装回**（含图形应用） | 清单自动生成，不用人肉逐个装 |
 | 5 | 装回 npm 全局 29 个包、cargo 工具（cargo 需先装 rustup） | 和 brew 是两套工具链 |
 | 6 | 有 `--defaults` 的偏好就导入 | 得等对应软件装好，所以放最后 |

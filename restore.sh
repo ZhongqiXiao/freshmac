@@ -97,33 +97,47 @@ elif [ -d "$HOME/.ssh" ]; then
   echo "==> 2. .ssh 权限已修正"
 fi
 
-# ---- 3. Homebrew 重装 + brew bundle ----
-# 国内镜像源(与 ~/.zshrc 一致): 装 brew 本体和 brew bundle 下载都走 USTC, 避免连不上 github/ghcr。
-# 换镜像(比如清华 TUNA)只改下面这几行即可。
+# ---- 3. Homebrew: 装本体 → 设镜像源 → brew bundle, 全程不走官方源 ----
+# 镜像源与 ~/.zshrc、本机 brew 磁盘 origin 一致 —— 当前生效的是 USTC(中科大)。
+# 换镜像(如清华 TUNA)只改下面 5 行 URL 即可。
+# 说明: install.sh 脚本本体只能从 raw.githubusercontent.com 取(镜像站不存),
+#       但 brew 本体的 git 克隆和之后一切瓶子(bottles)下载都走 USTC, 不碰官方 github/ghcr。
+#       USTC 官方已停供 homebrew-core / homebrew-cask 的 git 镜像(裸路径 404,
+#       非拼写错误, help/brew.git.html 只收录 brew.git + bottles/api 三域)。
+#       现代 brew 走 JSON API 本不 clone tap, 下面两行仅作兜底 → 指向可用的清华。
 export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.ustc.edu.cn/brew.git"
-export HOMEBREW_CORE_GIT_REMOTE="https://mirrors.ustc.edu.cn/homebrew-core.git"
-export HOMEBREW_CASK_GIT_REMOTE="https://mirrors.ustc.edu.cn/homebrew-cask.git"
+export HOMEBREW_CORE_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/homebrew-core.git"
+export HOMEBREW_CASK_GIT_REMOTE="https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/homebrew-cask.git"
 export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles"
 export HOMEBREW_API_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles/api"
-# 兜底: bash 非登录 shell 里 brew 可能不在 PATH, 直接用 /opt/homebrew/bin 定位
-command -v brew >/dev/null 2>&1 || { [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"; }
 if [ "$DRY" = 1 ]; then
-  echo "==> 3. 计划: 执行 brew bundle --file '$MAN/Brewfile' (自动恢复配方与依赖)"
+  echo "==> 3. 计划: ①装 Homebrew 本体(若缺) ②套用镜像源(当前: USTC) ③brew bundle 恢复全部软件"
 elif [ "$SKIP_BREW" = 1 ]; then
   echo "==> 3. 已跳过 Homebrew(--skip-brew)"
-elif command -v brew >/dev/null; then
-  echo "==> 3. brew bundle 恢复安装"
-  brew bundle --file "$MAN/Brewfile" --verbose 2>&1 | tail -5 || echo "!! brew bundle 有失败项, 重跑: brew bundle --file $MAN/Brewfile"
 else
-  echo "==> 3. 未检测到 Homebrew,需要重装以恢复全部工具。"
-  read -r -p "    是否现在执行官方安装脚本?(需要网络+sudo, 输入 y 确认): " yn
-  if [ "$yn" = y ]; then
-    echo "    安装 Homebrew / Xcode CLT ..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    [ -f /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
-    brew bundle --file "$MAN/Brewfile" --verbose 2>&1 | tail -5 || echo "!! brew bundle 有失败项,重跑: brew bundle --file $MAN/Brewfile"
-  else
-    echo "    跳过。装好 brew 后手动执行: brew bundle --file '$MAN/Brewfile'"
+  # ① 装 Homebrew 本体(没有才装; install.sh 尊重上面的 HOMEBREW_*_GIT_REMOTE, 克隆走 USTC 镜像)
+  command -v brew >/dev/null 2>&1 || { [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"; }
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "==> 3. 未检测到 Homebrew, 需装本体才能恢复全部工具。"
+    read -r -p "    是否现在安装?(需要网络 + sudo, 输入 y): " yn
+    if [ "$yn" = y ]; then
+      echo "    安装 Homebrew / Xcode CLT ..."
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
+    else
+      echo "    跳过安装。之后装好 brew, 手动执行: brew bundle --file '$MAN/Brewfile'"
+    fi
+  fi
+  # ② 套用镜像源: 若 tap 以 git 克隆形式存在, 把 origin 切到镜像(现代 brew 走 API, 通常为空操作)
+  if command -v brew >/dev/null 2>&1; then
+    HB="$(brew --prefix)"
+    git -C "$HB/Library/Taps/homebrew/homebrew-core" remote set-url origin "$HOMEBREW_CORE_GIT_REMOTE" 2>/dev/null || true
+    git -C "$HB/Library/Taps/homebrew/homebrew-cask" remote set-url origin "$HOMEBREW_CASK_GIT_REMOTE" 2>/dev/null || true
+  fi
+  # ③ brew bundle 恢复(瓶子走 HOMEBREW_BOTTLE_DOMAIN=USTC, 不再连官方源)
+  if command -v brew >/dev/null 2>&1; then
+    echo "==> 3. brew bundle 恢复安装"
+    brew bundle --file "$MAN/Brewfile" --verbose 2>&1 | tail -5 || echo "!! brew bundle 有失败项, 重跑: brew bundle --file '$MAN/Brewfile'"
   fi
 fi
 
