@@ -98,6 +98,13 @@ elif [ -d "$HOME/.ssh" ]; then
 fi
 
 # ---- 3. Homebrew 重装 + brew bundle ----
+# 国内镜像源(与 ~/.zshrc 一致): 装 brew 本体和 brew bundle 下载都走 USTC, 避免连不上 github/ghcr。
+# 换镜像(比如清华 TUNA)只改下面这几行即可。
+export HOMEBREW_BREW_GIT_REMOTE="https://mirrors.ustc.edu.cn/brew.git"
+export HOMEBREW_CORE_GIT_REMOTE="https://mirrors.ustc.edu.cn/homebrew-core.git"
+export HOMEBREW_CASK_GIT_REMOTE="https://mirrors.ustc.edu.cn/homebrew-cask.git"
+export HOMEBREW_BOTTLE_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles"
+export HOMEBREW_API_DOMAIN="https://mirrors.ustc.edu.cn/homebrew-bottles/api"
 # 兜底: bash 非登录 shell 里 brew 可能不在 PATH, 直接用 /opt/homebrew/bin 定位
 command -v brew >/dev/null 2>&1 || { [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"; }
 if [ "$DRY" = 1 ]; then
