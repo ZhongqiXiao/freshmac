@@ -1,5 +1,27 @@
-# 备份数据(含 SSH 私钥 / AI token / 数据库密码镜像)——永不提交
+# Local full backups may contain SSH keys, tokens, passwords and private settings.
 backups/
 *.dmg
 *.tar.gz
 .DS_Store
+
+# Keep machine-specific shell settings and credentials out of the public repo.
+.zshrc.local
+.env
+.env.*
+*.local
+*.secret
+*.secrets
+*.pem
+*.key
+*.p12
+*.pfx
+**/.ssh/
+**/.zsh_history
+**/.bash_history
+**/.kube/
+**/.claude/
+**/.codex/
+**/.config/gh/hosts.yml
+**/.mcp.json
+**/.claude.json
+**/auth*.json
