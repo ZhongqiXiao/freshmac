@@ -1,0 +1,9 @@
+{
+  "editor.fontFamily": "'MesloLGS NF', Menlo, Monaco, 'Courier New', monospace",
+  "files.autoSave": "afterDelay",
+  "workbench.colorTheme": "Light 2026",
+  "git.autofetch": true,
+  "markdown-preview-enhanced.enablePreviewZenMode": false,
+  "chat.viewSessions.orientation": "stacked",
+  "terminal.integrated.initialHint": false
+}

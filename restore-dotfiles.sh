@@ -32,6 +32,9 @@ FILES=(
   .config/otty/config.toml
   .config/otty/themes/one-dark.ottytheme
   .config/otty/themes/nord.ottytheme
+  .config/git/ignore
+  .config/zed/settings.json
+  "Library/Application Support/Code/User/settings.json"
 )
 
 for file in "${FILES[@]}"; do

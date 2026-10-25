@@ -13,12 +13,15 @@
 | `dotfiles/.config/ghostty/config` | `~/.config/ghostty/config` |
 | `dotfiles/.config/otty/config.toml` | `~/.config/otty/config.toml` |
 | `dotfiles/.config/otty/themes/` | `~/.config/otty/themes/`（当前使用的 One Dark 和 Nord 主题）|
+| `dotfiles/.config/git/ignore` | `~/.config/git/ignore` |
+| `dotfiles/.config/zed/settings.json` | `~/.config/zed/settings.json`（仅公开筛选过的编辑器、模型和主题偏好）|
+| `dotfiles/Library/Application Support/Code/User/settings.json` | VS Code 用户设置（已剔除本机项目标识和自动批准命令）|
 
 `.zshrc` 保留通用 shell 配置。工作集群别名、公司目录、本机工具路径和凭据不进入公开版本；本机专属设置可放在 `~/.zshrc.local`，公开 `.zshrc` 会在该文件存在时加载它。
 
 ## 换机恢复公开配置
 
-先安装需要的应用和命令行工具（zsh、Oh My Zsh 及对应插件、Starship、Ghostty、Otty、bat、eza、zoxide 等），然后：
+先安装需要的应用和命令行工具（zsh、Oh My Zsh 及对应插件、Starship、Ghostty、Otty、Zed、VS Code、bat、eza、zoxide 等），然后：
 
 ```bash
 git clone https://github.com/ZhongqiXiao/freshmac.git ~/macos-backup
@@ -41,7 +44,7 @@ bash encrypt-backup.sh <备份时间戳>
 bash decrypt-restore.sh --dry-run
 ```
 
-`backup.sh` 会把多种本机配置收进 `backups/<时间戳>/`，其中可能含有密钥、token、密码和账户状态。先用 `--dry-run` 检查恢复计划；离开本机前用 `encrypt-backup.sh` 加密，并妥善保存密码。不要把完整备份目录、加密密码或解密后的文件提交到 Git。
+`backup.sh` 会把多种本机配置收进 `backups/<时间戳>/`，包括完整 Neovim、VS Code、Zed、Git、npm 和 Maven 设置；其中可能含有密钥、token、密码和账户状态。先用 `--dry-run` 检查恢复计划；离开本机前用 `encrypt-backup.sh` 加密，并妥善保存密码。不要把完整备份目录、加密密码或解密后的文件提交到 Git。
 
 ## 安全维护
 

@@ -23,5 +23,12 @@ backups/
 **/.codex/
 **/.config/gh/hosts.yml
 **/.mcp.json
+**/mcp.json
+**/chatLanguageModels.json
+**/workspaceStorage/
+**/History/
+**/prompts/
+**/AGENTS.md
+**/.git/
 **/.claude.json
 **/auth*.json
