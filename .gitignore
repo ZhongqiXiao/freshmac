@@ -32,3 +32,4 @@ backups/
 **/.git/
 **/.claude.json
 **/auth*.json
+.macos-backup-secrets
