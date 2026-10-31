@@ -61,21 +61,18 @@ echo "==> 备份目录: $DST"
 
 # ---------- 1. Shell / Git / 环境点文件 ----------
 echo "==> 1. 点文件"
-for f in .zshrc .zshenv .zprofile .zsh_history .bash_profile .bashrc .profile \
-         .bash_history .gitconfig .npmrc .wget-hsts .mcp.json .claude.json \
-         .p10k.zsh .viminfo; do bk "$f" "$f"; done
+for f in .zshrc .zshenv .zprofile .bash_profile .bashrc .profile \
+         .gitconfig .npmrc .mcp.json .claude.json \
+         .p10k.zsh; do bk "$f" "$f"; done
 bk .git-templates .git-templates
 bk .vim .vim
 bk .zsh .zsh                      # ~/.zsh/completions 等
-bk .oh-my-zsh .oh-my-zsh          # 15M,整目录(含 custom/ 与历史)
-bk .zsh_sessions .zsh_sessions
 bk scripts scripts                # ~/scripts(expect 脚本等)
 
 # ---------- 2. ~/.config 下的小配置(整目录) ----------
 echo "==> 2. ~/.config 配置"
 for d in starship.toml fish nvim ghostty zed karabiner git gh github-copilot \
-         configstore uv openspec gemini gc crush otty snapzy devin cagent goose \
-         opencode; do bk ".config/$d" ".config/$d"; done
+         configstore uv openspec gemini gc otty snapzy devin; do bk ".config/$d" ".config/$d"; done
 # superpowers: 只取配置与日志,归档目录很大单独走开关
 bk_children ".config/superpowers" ".config/superpowers" \
             logs config.json agent-config.json system-config.json
@@ -96,7 +93,7 @@ else
     [ -e "$f" ] && ditto "$f" "$CFG/.codex/$(basename "$f")"
   done
 fi
-for d in .cc-switch .aliyun .codeium .continue .kube .ansible .bundle; do
+for d in .aliyun .kube .ansible .bundle; do
   [ -d "$HOME/$d" ] && bk "$d" "$d"
 done
 [ -f "$HOME/.m2/settings.xml" ] && bk .m2/settings.xml .m2/settings.xml
@@ -125,6 +122,9 @@ echo "==> 6. 图形应用配置"
 bkraw "$HOME/Library/Application Support/iTerm2"               "AppSupport/iTerm2"
 bkraw "$HOME/Library/Preferences/com.googlecode.iterm2.plist"  "Prefs/com.googlecode.iterm2.plist"
 bkraw "$HOME/Library/Application Support/lazygit"              "AppSupport/lazygit"
+# Deepseek Harness Desktop: 只备份 profile 配置文件
+bk_children "Library/Application Support/dsh-desktop/harness/profiles/web" "AppSupport/dsh-desktop/harness/profiles/web" \
+            cordis.yml cordis.patch.yml
 # VS Code: 只要用户配置,不要几百 MB 的工作区缓存
 bk_children "Library/Application Support/Code/User" "AppSupport/Code-User" \
             settings.json keybindings.json snippets mcp.json chatLanguageModels.json
