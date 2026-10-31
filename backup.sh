@@ -226,7 +226,8 @@ if [ "$DO_DMG" = 1 ]; then
     hdiutil create -srcdir "$DST" -volname "macos-backup-$TS" -format UDZO "$DMG_FILE" >/dev/null 2>&1
     ENCRYPTION_INFO="否"
   else
-    hdiutil create -srcdir "$DST" -volname "macos-backup-$TS" -format UDZO -encryption AES-256 -stdinpass "$DMG_FILE" <<< "$DMG_PASS" >/dev/null 2>&1
+    # 关键：必须用不带换行的 stdin；否则会把 '\n' 写进密码，CLI 可用但 Finder GUI 无法输入该密码
+    printf '%s' "$DMG_PASS" | hdiutil create -srcdir "$DST" -volname "macos-backup-$TS" -format UDZO -encryption AES-256 -stdinpass "$DMG_FILE" >/dev/null 2>&1
     ENCRYPTION_INFO="是"
   fi
   if [ -f "$DMG_FILE" ]; then
