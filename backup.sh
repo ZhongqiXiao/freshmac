@@ -12,7 +12,7 @@
 #   --raycast      连同 Raycast 配置与数据 (~/.config/raycast + AppSupport, ~700M)
 #   --defaults     额外用 defaults export 备份若干系统偏好(plist)
 #   --archive      完成后把备份目录打成 tar.gz
-#   --dmg PASSWORD 完成后创建加密 DMG（自动根据备份大小调整镜像大小）
+#   --dmg [PASSWORD] 完成后创建 DMG（无密码时不指定参数，有密码时指定密码值）
 # ============================================================================
 set -uo pipefail
 cd "$HOME" || exit 1
@@ -33,7 +33,6 @@ for a in "$@"; do case "$a" in
   --dmg) DO_DMG=1 ;;
   *) if [ "$DO_DMG" = 1 ] && [ -z "$DMG_PASS" ]; then DMG_PASS="$a"; DO_DMG=1; else echo "未知参数: $a" >&2; exit 2; fi ;;
 esac; done
-if [ "$DO_DMG" = 1 ] && [ -z "$DMG_PASS" ]; then echo "错误: --dmg 需要指定密码" >&2; exit 2; fi
 
 WARN=()
 log() { printf '  %s\n' "$*"; }
@@ -219,16 +218,24 @@ if [ "$DO_ARCHIVE" = 1 ]; then
 fi
 if [ "$DO_DMG" = 1 ]; then
   echo
-  echo "==== 创建加密 DMG ===="
+  echo "==== 创建 DMG ===="
   DMG_FILE="$BACKUP_ROOT/backup-$TS.dmg"
   echo "  创建中: $DMG_FILE"
-  # 创建加密 DMG（合并 stdout/stderr，检查文件是否存在）
-  hdiutil create -srcdir "$DST" -volname "macos-backup-$TS" -format UDZO -encryption AES-256 -stdinpass "$DMG_FILE" <<< "$DMG_PASS" >/dev/null 2>&1
+  # 创建 DMG（支持有密码和无密码）
+  if [ -z "$DMG_PASS" ]; then
+    hdiutil create -srcdir "$DST" -volname "macos-backup-$TS" -format UDZO "$DMG_FILE" >/dev/null 2>&1
+    ENCRYPTION_INFO="否"
+  else
+    hdiutil create -srcdir "$DST" -volname "macos-backup-$TS" -format UDZO -encryption AES-256 -stdinpass "$DMG_FILE" <<< "$DMG_PASS" >/dev/null 2>&1
+    ENCRYPTION_INFO="是"
+  fi
   if [ -f "$DMG_FILE" ]; then
     DMG_SZ=$(du -sh "$DMG_FILE" 2>/dev/null | cut -f1)
     echo "  ✓ DMG 已创建: $DMG_SZ"
-    echo "    密码保护: 是"
-    echo "    加密算法: AES-256"
+    echo "    密码保护: $ENCRYPTION_INFO"
+    if [ "$ENCRYPTION_INFO" = "是" ]; then
+      echo "    加密算法: AES-256"
+    fi
   else
     echo "  ✗ DMG 创建失败" >&2
     exit 1

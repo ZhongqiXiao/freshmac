@@ -1,0 +1,169 @@
+# DMG 加密与无密码版本验证报告
+
+生成时间: 2026-10-31 23:25
+系统: macOS (ARM64/Apple Silicon)
+
+## 📊 3 个 DMG 文件总结
+
+| 文件名 | 大小 | 时间戳 | 密码保护 | 验证状态 |
+|--------|------|--------|----------|---------|
+| backup-20261031-231101.dmg | 8.0M | 23:11 | ✓ 有密码 (mypass123) | ✅ 通过 |
+| backup-20261031-231641.dmg | 8.0M | 23:17 | ✓ 有密码 (mypass123) | ✅ 通过 |
+| backup-20261031-232456.dmg | 7.9M | 23:25 | ✗ 无密码 | ✅ 通过 |
+
+## 🔒 有密码 DMG (第 1、2 个)
+
+### 创建方式
+```bash
+bash backup.sh --dmg mypass123
+```
+
+### 挂载方式
+```bash
+hdiutil attach backup-20261031-231101.dmg
+# 系统会提示输入密码，输入: mypass123
+```
+
+### 特性
+- 加密算法: AES-256
+- 格式: UDZO (compressed sparse disk image)
+- 自动压缩: 备份从 15M 压缩至 8.0M (~53% 压缩率)
+
+## 🔓 无密码 DMG (第 3 个)
+
+### 创建方式
+```bash
+bash backup.sh --dmg
+# 或者
+bash backup.sh --dmg ""
+```
+
+### 挂载方式
+```bash
+hdiutil attach backup-20261031-232456.dmg
+# 无需输入密码，直接挂载
+```
+
+### 验证结果
+
+#### 1️⃣ CRC32 校验 (自动验证，全部通过)
+```
+✓ Protective Master Boot Record (MBR:0): CRC32 $DCE8969D
+✓ GPT Header (Primary): CRC32 $39901DBA
+✓ GPT Partition Data (Primary): CRC32 $927D3BA3
+✓ Apple_Free (3): CRC32 $00000000
+✓ disk image (Apple_APFS:4): CRC32 $8099534E
+✓ GPT Partition Data (Backup): CRC32 $927D3BA3
+✓ GPT Header (Backup): CRC32 $AF16D05C
+✓ 全局: CRC32 $1F958E28
+```
+
+#### 2️⃣ 挂载验证
+```
+✓ 成功挂载为: /Volumes/macos-backup-20261031-232456
+✓ 文件系统: APFS
+✓ 卷名: macos-backup-20261031-232456
+```
+
+#### 3️⃣ 目录结构验证
+```
+config/          (29 项配置目录)
+├── .aliyun
+├── .ansible
+├── .bash_profile
+├── ... (25 个其他配置文件/目录)
+├── AppSupport/
+│   └── dsh-desktop/harness/profiles/web/
+│       ├── cordis.yml (223B) ✓
+│       └── cordis.patch.yml (55KB) ✓
+└── Prefs/       (plist 系统偏好)
+
+manifest/        (恢复清单)
+├── Brewfile     (87 项 Homebrew 配方)
+├── npm-globals.sh (29 个 npm 全局包)
+├── cargo-install.sh
+└── versions.txt
+```
+
+#### 4️⃣ 文件完整性验证
+- 总文件数: 1,263
+- DeepSeek 配置文件: 2 ✓
+  - cordis.yml: 223B ✓
+  - cordis.patch.yml: 55,738B ✓
+- 所有 .ssh 密钥: ✓
+- 所有 .claude* token: ✓
+- 所有 AI 工具配置: ✓
+
+#### 5️⃣ Dry-run 恢复测试
+```
+✓ 解析备份: /Users/zhongqi/macos-backup/backups/20261031-232456
+✓ 预验证 29 项配置
+✓ 预验证 Brewfile (87 项)
+✓ 预验证 npm 全局包脚本 (29 项)
+✓ 预验证 cargo 包脚本
+
+DRY-RUN 预览完成 - 未写入任何文件
+真实恢复命令:
+  bash restore.sh 20261031-232456
+```
+
+## 🔧 脚本优化总结
+
+### 参数变更
+```bash
+# 旧: 必须指定密码
+bash backup.sh --dmg mypass123
+
+# 新: 支持无密码
+bash backup.sh --dmg          # 无密码
+bash backup.sh --dmg password # 有密码
+```
+
+### 代码实现
+- 移除了强制要求密码的检查
+- 判断密码是否为空，动态选择 hdiutil 命令:
+  - 空密码: `hdiutil create -srcdir ... -format UDZO`
+  - 非空密码: `hdiutil create -srcdir ... -format UDZO -encryption AES-256 -stdinpass`
+- 输出信息动态显示 "密码保护: 是/否"
+
+### 文件大小优化
+- UDZO 格式自动压缩，无需预先指定大小
+- 15M 源备份 → 7.9-8.0M DMG (~47% 节省)
+- 3 个 DMG 总计节省空间: ~22M
+
+## ✅ 最终确认清单
+
+- [x] 三个 DMG 文件都已创建
+- [x] 两个有密码版本 (AES-256 加密)
+- [x] 一个无密码版本 (无加密)
+- [x] 无密码版本支持直接挂载 (无需输入密码)
+- [x] 有密码版本 AES-256 加密验证
+- [x] 全部 CRC32 校验通过
+- [x] 全部文件完整性验证通过
+- [x] Dry-run 恢复测试通过
+- [x] 脚本参数支持无密码模式
+- [x] 文档与用法示例更新
+
+## 📝 使用建议
+
+1. **日常开发**: 使用有密码版本 (生产环保)
+   ```bash
+   bash backup.sh --dmg mypass123
+   ```
+
+2. **验证/测试**: 使用无密码版本 (快速挂载)
+   ```bash
+   bash backup.sh --dmg
+   ```
+
+3. **跨设备转移**: 使用有密码版本 (安全传输)
+   ```bash
+   # 发送给朋友/同事
+   scp backup-20261031-231101.dmg user@server:/path
+   # 接收者:
+   hdiutil attach backup-20261031-231101.dmg
+   # 输入密码: mypass123
+   ```
+
+---
+✅ 所有任务已完成并验证
