@@ -2,7 +2,7 @@
 # ============================================================================
 # macOS 重装前配置备份脚本
 # 用法:  bash ~/macos-backup/backup.sh [--all] [--codex-data] [--claude-data]
-#                      [--superpowers] [--defaults] [--archive]
+#                      [--superpowers] [--defaults] [--archive] [--dmg [password]]
 #
 # 默认: 备份全部"关键配置"(体积小)。大数据可选开关见文档。
 #    --all         对 ~ 下所有其它 <100MB 的 dotfile/dir 做兜底全量备份
@@ -12,6 +12,7 @@
 #   --raycast      连同 Raycast 配置与数据 (~/.config/raycast + AppSupport, ~700M)
 #   --defaults     额外用 defaults export 备份若干系统偏好(plist)
 #   --archive      完成后把备份目录打成 tar.gz
+#   --dmg PASSWORD 完成后创建加密 DMG（自动根据备份大小调整镜像大小）
 # ============================================================================
 set -uo pipefail
 cd "$HOME" || exit 1
@@ -24,13 +25,15 @@ CFG="$DST/config"          # 配置的镜像目录(目录结构同 $HOME)
 MAN="$DST/manifest"        # 清单 / 可重装清单 / Brewfile
 mkdir -p "$CFG" "$MAN"
 
-SKIP_ALL=1; SKIP_CODEX=1; SKIP_CLAUDE=1; SKIP_SPW=1; SKIP_RC=1; SKIP_DEF=1; DO_ARCHIVE=0
+SKIP_ALL=1; SKIP_CODEX=1; SKIP_CLAUDE=1; SKIP_SPW=1; SKIP_RC=1; SKIP_DEF=1; DO_ARCHIVE=0; DO_DMG=0; DMG_PASS=""
 for a in "$@"; do case "$a" in
   --all) SKIP_ALL=0 ;;  --codex-data) SKIP_CODEX=0 ;;
   --claude-data) SKIP_CLAUDE=0 ;;  --superpowers) SKIP_SPW=0 ;;
   --raycast) SKIP_RC=0 ;;  --defaults) SKIP_DEF=0 ;;  --archive) DO_ARCHIVE=1 ;;
-  *) echo "未知参数: $a" >&2; exit 2 ;;
+  --dmg) DO_DMG=1 ;;
+  *) if [ "$DO_DMG" = 1 ] && [ -z "$DMG_PASS" ]; then DMG_PASS="$a"; DO_DMG=1; else echo "未知参数: $a" >&2; exit 2; fi ;;
 esac; done
+if [ "$DO_DMG" = 1 ] && [ -z "$DMG_PASS" ]; then echo "错误: --dmg 需要指定密码" >&2; exit 2; fi
 
 WARN=()
 log() { printf '  %s\n' "$*"; }
@@ -213,4 +216,21 @@ echo "  可选会话历史未备份,需要时加 --codex-data / --claude-data / 
 if [ "$DO_ARCHIVE" = 1 ]; then
   ( cd "$BACKUP_ROOT/backups" && tar czf "$TS.tar.gz" "$TS" )
   echo "  已归档: $BACKUP_ROOT/backups/$TS.tar.gz"
+fi
+if [ "$DO_DMG" = 1 ]; then
+  echo
+  echo "==== 创建加密 DMG ===="
+  DMG_FILE="$BACKUP_ROOT/backup-$TS.dmg"
+  echo "  创建中: $DMG_FILE"
+  # 创建加密 DMG（合并 stdout/stderr，检查文件是否存在）
+  hdiutil create -srcdir "$DST" -volname "macos-backup-$TS" -format UDZO -encryption AES-256 -stdinpass "$DMG_FILE" <<< "$DMG_PASS" >/dev/null 2>&1
+  if [ -f "$DMG_FILE" ]; then
+    DMG_SZ=$(du -sh "$DMG_FILE" 2>/dev/null | cut -f1)
+    echo "  ✓ DMG 已创建: $DMG_SZ"
+    echo "    密码保护: 是"
+    echo "    加密算法: AES-256"
+  else
+    echo "  ✗ DMG 创建失败" >&2
+    exit 1
+  fi
 fi
